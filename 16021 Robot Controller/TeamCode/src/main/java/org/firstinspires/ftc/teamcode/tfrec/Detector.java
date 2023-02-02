@@ -20,7 +20,6 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.view.Surface;
 import android.view.View;
-//import android.R;
 import android.widget.FrameLayout;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;

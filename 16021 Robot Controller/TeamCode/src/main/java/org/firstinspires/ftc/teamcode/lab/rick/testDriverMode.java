@@ -29,19 +29,27 @@
 
 package org.firstinspires.ftc.teamcode.lab.rick;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.tfrec.Detector;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -63,17 +71,20 @@ public class testDriverMode extends OpMode
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;
     CRServo left_intake, right_intake;
-    DcMotor horizontal_slides, vertical_slides;
+    DcMotorEx horizontal_slides, vertical_slides;
     AnalogInput rightArmPosition,leftArmPosition;
     /////////////////////////////////////////////
     private ElapsedTime runtime = new ElapsedTime();
     private ElapsedTime wristCooldown = new ElapsedTime();
     private ElapsedTime intakeMacroCooldown = new ElapsedTime();
-    double wristPos = 0 ;
+    private SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+    private PIDController hController,vController;
+    public static double hp,hi,hd,hTarget = 0;
+    public static double vp,vi,vd,vf,vTarget = 0;
     /////////////////////////////////////////////
     @Override
     public void init() {
-        /////////////////////////////////////////////
+////////////////////////HARDWARE INIT////////////////
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");
         right_arm = hardwareMap.get(ServoImplEx.class, "RA");
         wrist = hardwareMap.get(ServoImplEx.class,"Wrist");
@@ -81,25 +92,33 @@ public class testDriverMode extends OpMode
         right_intake = hardwareMap.get(CRServo.class,"RI");
         rightArmPosition = hardwareMap.get(AnalogInput.class,"rArmPos");
         leftArmPosition = hardwareMap.get(AnalogInput.class,"lArmPos");
-        vertical_slides = hardwareMap.get(DcMotor.class,"V");
-        horizontal_slides = hardwareMap.get(DcMotor.class,"H");
-        /////////////////////////////////////////////
+        vertical_slides = hardwareMap.get(DcMotorEx.class,"V");
+        horizontal_slides = hardwareMap.get(DcMotorEx.class,"H");
+////////////////////////SET PWM RANGE////////////////
         left_arm.setPwmRange(new PwmControl.PwmRange(500,2500));
         right_arm.setPwmRange(new PwmControl.PwmRange(500,2500));
         wrist.setPwmRange(new PwmControl.PwmRange(510,2490));
-        /////////////////////////////////////////////
+////////////////////////HARDWARE REVERSING///////////
         right_arm.setDirection(ServoImplEx.Direction.REVERSE);
         left_intake.setDirection(CRServo.Direction.REVERSE);
         horizontal_slides.setDirection(DcMotorSimple.Direction.REVERSE);
-        /////////////////////////////////////////////
+////////////////////////MOTOR BRAKE BEHAVIOR/////////
         vertical_slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         horizontal_slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        /////////////////////////////////////////////
+////////////////////////INIT POSITIONS///////////////
         left_arm.setPosition(0);
         right_arm.setPosition(0);
         wrist.setPosition(0);
-        /////////////////////////////////////////////
+////////////////////////PID CONTROLLERS//////////////
+        hController = new PIDController(hp,hi,hd);
+        vController = new PIDController(vp,vi,vd);
+////////////////////////DASHBOARD TELEMETRY//////////
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+////////////////////////DRIVE INIT///////////////////
+        drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+////////////////////////STATUS UPDATE////////////////
         telemetry.addData("Status", "Initialized");
+/////////////////////////////////////////////////////
     }
     @Override
     public void init_loop() {
@@ -111,39 +130,52 @@ public class testDriverMode extends OpMode
     }
     @Override
     public void loop() {
+////////////////////////HORIZONTAL SLIDES PID////////
+        hController.setPID(hp,hi,hd);
+        int hPos = horizontal_slides.getCurrentPosition();
+        double hPID = hController.calculate(hPos,hTarget);
+        double hPower = hPID;
+        horizontal_slides.setPower(hPower);
+////////////////////////VERTICAL SLIDES PID//////////
+        vController.setPID(vp,vi,vd);
+        int vPos = vertical_slides.getCurrentPosition();
+        double vPID = vController.calculate(vPos,vTarget);
+        double vPower = vPID+vf;
+        vertical_slides.setPower(vPower);
+////////////////////////ARM PID VARS/////////////////
         double leftArmAngle = ((leftArmPosition.getVoltage()-0.82) /3.3) * 360;
         double rightArmAngle = ((2.499-rightArmPosition.getVoltage())/3.3) * 360;
         double armAngle = (leftArmAngle+rightArmAngle)/2;
-        vertical_slides.setPower(gamepad1.left_stick_y);
-        horizontal_slides.setPower(gamepad1.left_stick_x);
+////////////////////////ARM LOGIC////////////////////
         if(gamepad1.dpad_left){
             left_arm.setPosition(0);
             right_arm.setPosition(0);
-            wristPos = 0;
+            wrist.setPosition(0);
             intakeMacroCooldown.reset();
         }
         else if(gamepad1.dpad_up){
             left_arm.setPosition(0.5);
             right_arm.setPosition(0.5);
-            wristPos = .5;
+            wrist.setPosition(.5);
             intakeMacroCooldown.reset();
         }
         else if(gamepad1.dpad_right){
             left_arm.setPosition(0.55);
             right_arm.setPosition(0.55);
-            wristPos = 1;
+            wrist.setPosition(1);
             intakeMacroCooldown.reset();
         }
         else if(armAngle>100&&intakeMacroCooldown.time()>0.75){
             left_arm.setPosition(0.85);
             right_arm.setPosition(0.85);
-            wristPos = 1;
+            wrist.setPosition(1);
 
             if(armAngle>152&&intakeMacroCooldown.time()>0.8) {
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
             }
         }
+////////////////////////INTAKE LOGIC/////////////////
         if(gamepad1.a){
             left_intake.setPower(1);
             right_intake.setPower(1);
@@ -156,22 +188,30 @@ public class testDriverMode extends OpMode
             left_intake.setPower(0.01);
             right_intake.setPower(0.01);
         }
-        if(gamepad1.right_trigger>0&&wristCooldown.time()>0.1){
-            wristPos+=0.01;
-            wristCooldown.reset();
-        }
-        else if(gamepad1.left_trigger>0&&wristCooldown.time()>0.1){
-            wristPos-=0.01;
-            wristCooldown.reset();
-        }
-        wrist.setPosition(wristPos);
-        telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("WristPosition: ",wristPos);
+////////////////////////DRIVE LOGIC//////////////////
+        drive.setWeightedDrivePower(
+                new Pose2d(
+                        -gamepad1.left_stick_y,
+                        -gamepad1.left_stick_x,
+                        -gamepad1.right_stick_x
+                )
+        );
+        drive.update();
+        Pose2d poseEstimate = drive.getPoseEstimate();
+////////////////////////TELEMETRY////////////////////
+        telemetry.addData("x", poseEstimate.getX());
+        telemetry.addData("y", poseEstimate.getY());
+        telemetry.addData("heading", poseEstimate.getHeading());
         telemetry.addData("leftArmAngle: ", leftArmAngle);
         telemetry.addData("rightArmAngle: ", rightArmAngle);
         telemetry.addData("leftArmVoltage: ", leftArmPosition.getVoltage()-0.82);
         telemetry.addData("rightArmVoltage: ", 2.499-rightArmPosition.getVoltage());
+        telemetry.addData("horizontal position: ",hPos);
+        telemetry.addData("horizontal target position: ",hTarget);
+        telemetry.addData("vertical position: ",vPos);
+        telemetry.addData("vertical target position: ",vTarget);
         telemetry.update();
+/////////////////////////////////////////////////////
     }
     @Override
     public void stop() {

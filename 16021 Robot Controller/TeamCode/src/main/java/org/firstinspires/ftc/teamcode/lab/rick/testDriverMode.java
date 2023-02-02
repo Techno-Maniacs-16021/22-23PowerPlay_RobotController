@@ -29,6 +29,9 @@
 
 package org.firstinspires.ftc.teamcode.lab.rick;
 
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -77,14 +80,19 @@ public class testDriverMode extends OpMode
     private ElapsedTime runtime = new ElapsedTime();
     private ElapsedTime wristCooldown = new ElapsedTime();
     private ElapsedTime intakeMacroCooldown = new ElapsedTime();
-    private SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
+    private ElapsedTime outTakeCooldown = new ElapsedTime();
+    private ElapsedTime intakeSlideCooldown = new ElapsedTime();
+    private SampleMecanumDrive drive;
     private PIDController hController,vController;
-    public static double hp,hi,hd,hTarget = 0;
-    public static double vp,vi,vd,vf,vTarget = 0;
+    public static double hp=0.021,hi=0,hd=0.0005,hTarget = 0;
+    public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
+    int gamepad_A_Release = 0;
+    boolean aRealeased = false;
     /////////////////////////////////////////////
     @Override
     public void init() {
 ////////////////////////HARDWARE INIT////////////////
+        drive = new SampleMecanumDrive(hardwareMap);
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");
         right_arm = hardwareMap.get(ServoImplEx.class, "RA");
         wrist = hardwareMap.get(ServoImplEx.class,"Wrist");
@@ -101,10 +109,15 @@ public class testDriverMode extends OpMode
 ////////////////////////HARDWARE REVERSING///////////
         right_arm.setDirection(ServoImplEx.Direction.REVERSE);
         left_intake.setDirection(CRServo.Direction.REVERSE);
-        horizontal_slides.setDirection(DcMotorSimple.Direction.REVERSE);
+        vertical_slides.setDirection(DcMotorSimple.Direction.REVERSE);
 ////////////////////////MOTOR BRAKE BEHAVIOR/////////
-        vertical_slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        horizontal_slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        vertical_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        horizontal_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+////////////////////////ENCODER RESET////////////////
+        vertical_slides.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        horizontal_slides.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
 ////////////////////////INIT POSITIONS///////////////
         left_arm.setPosition(0);
         right_arm.setPosition(0);
@@ -136,12 +149,14 @@ public class testDriverMode extends OpMode
         double hPID = hController.calculate(hPos,hTarget);
         double hPower = hPID;
         horizontal_slides.setPower(hPower);
+        //horizontal_slides.setPower(gamepad1.left_stick_x);
 ////////////////////////VERTICAL SLIDES PID//////////
         vController.setPID(vp,vi,vd);
         int vPos = vertical_slides.getCurrentPosition();
         double vPID = vController.calculate(vPos,vTarget);
         double vPower = vPID+vf;
         vertical_slides.setPower(vPower);
+        //vertical_slides.setPower(gamepad1.left_sti ck_y);
 ////////////////////////ARM PID VARS/////////////////
         double leftArmAngle = ((leftArmPosition.getVoltage()-0.82) /3.3) * 360;
         double rightArmAngle = ((2.499-rightArmPosition.getVoltage())/3.3) * 360;
@@ -151,12 +166,14 @@ public class testDriverMode extends OpMode
             left_arm.setPosition(0);
             right_arm.setPosition(0);
             wrist.setPosition(0);
+            hTarget=750;
+            vTarget=0;
             intakeMacroCooldown.reset();
         }
         else if(gamepad1.dpad_up){
             left_arm.setPosition(0.5);
             right_arm.setPosition(0.5);
-            wrist.setPosition(.5);
+            wrist.setPosition(1);
             intakeMacroCooldown.reset();
         }
         else if(gamepad1.dpad_right){
@@ -165,7 +182,7 @@ public class testDriverMode extends OpMode
             wrist.setPosition(1);
             intakeMacroCooldown.reset();
         }
-        else if(armAngle>100&&intakeMacroCooldown.time()>0.75){
+        /*else if(armAngle>100&&intakeMacroCooldown.time()>0.75){
             left_arm.setPosition(0.85);
             right_arm.setPosition(0.85);
             wrist.setPosition(1);
@@ -174,11 +191,34 @@ public class testDriverMode extends OpMode
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
             }
-        }
+        }*/
 ////////////////////////INTAKE LOGIC/////////////////
+        if(gamepad_A_Release!=0&&!gamepad1.a){
+            gamepad_A_Release=0;
+            aRealeased=true;
+            }
+        if(aRealeased){
+            hTarget=0;
+            left_arm.setPosition(0.55);
+            right_arm.setPosition(0.55);
+            wrist.setPosition(1);
+            if(Math.abs(hTarget-hPos)<10) {
+                left_arm.setPosition(0.85);
+                right_arm.setPosition(0.85);
+                intakeMacroCooldown.reset();
+                aRealeased=false;
+            }
+        }
         if(gamepad1.a){
             left_intake.setPower(1);
             right_intake.setPower(1);
+            hTarget+=10;
+            gamepad_A_Release++;
+        }
+        else if(armAngle>152&&intakeMacroCooldown.time()>0.8) {
+            left_intake.setPower(-1);
+            right_intake.setPower(-1);
+            if(intakeMacroCooldown.time()>1.5)vTarget=3500;
         }
         else if(gamepad1.b){
             left_intake.setPower(-1);
@@ -191,9 +231,9 @@ public class testDriverMode extends OpMode
 ////////////////////////DRIVE LOGIC//////////////////
         drive.setWeightedDrivePower(
                 new Pose2d(
-                        -gamepad1.left_stick_y,
-                        -gamepad1.left_stick_x,
-                        -gamepad1.right_stick_x
+                        -gamepad2.left_stick_y,
+                        -gamepad2.left_stick_x,
+                        -gamepad2.right_stick_x
                 )
         );
         drive.update();
@@ -208,8 +248,10 @@ public class testDriverMode extends OpMode
         telemetry.addData("rightArmVoltage: ", 2.499-rightArmPosition.getVoltage());
         telemetry.addData("horizontal position: ",hPos);
         telemetry.addData("horizontal target position: ",hTarget);
+        telemetry.addData("horizontal power: ",hPower);
         telemetry.addData("vertical position: ",vPos);
         telemetry.addData("vertical target position: ",vTarget);
+        telemetry.addData("vertical power: ",vPower);
         telemetry.update();
 /////////////////////////////////////////////////////
     }

@@ -1,0 +1,3 @@
+0 yellow
+1 blue
+2 magenta

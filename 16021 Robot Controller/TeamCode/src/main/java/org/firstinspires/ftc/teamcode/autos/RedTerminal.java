@@ -34,12 +34,15 @@ public class RedTerminal extends LinearOpMode {
     public static double hp=0.03,hi=0,hd=0.0005,hTarget = 0;
     public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
+    public static double REPEAT = 1; //number of extra cones;
     public static double LEFT = 1; //boolean, 0 if false, 1 if true;
     public static double MIDDLE = 0; //boolean, 0 if false, 1 if true;
     public static double RIGHT = 0; //boolean, 0 if false, 1 if true;
-    public static double X = 36;
-    public static double Y = 5;
-    public static double HEAD = 12.5;
+    //public static double X = 36;
+    //public static double Y = 5;
+    //public static double HEAD = 12.5;
+    public static double HTARGET = 1980;
+    public static double VTARGET = 3500;
 
     @Override
     public void runOpMode() {
@@ -95,7 +98,7 @@ public class RedTerminal extends LinearOpMode {
                 .lineTo(new Vector2d(36, 14))
                 .build();
         Trajectory farm = drive.trajectoryBuilder(auto.end())
-                .lineToLinearHeading(new Pose2d(36.5,5,Math.toRadians(HEAD)))
+                .lineToLinearHeading(new Pose2d(36.5,5,Math.toRadians(12.5)))
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
                 .lineTo(new Vector2d(36, 36))
@@ -126,7 +129,7 @@ public class RedTerminal extends LinearOpMode {
             }
             drive.followTrajectory(auto);
             drive.followTrajectory(farm);
-            vTarget=3650;
+            vTarget=VTARGET;
             while (opModeIsActive()&&(Math.abs(vTarget-(vertical_slides.getCurrentPosition()))>20)){
                 ////////////////////////VERTICAL SLIDES PID//////////
                 vController.setPID(vp,vi,vd);
@@ -136,7 +139,7 @@ public class RedTerminal extends LinearOpMode {
                 vertical_slides.setPower(vPower);
             }
             vTarget=0;
-            while (opModeIsActive()&&Math.abs(vTarget-vertical_slides.getCurrentPosition())>10){
+            while (opModeIsActive()&&Math.abs(vTarget-vertical_slides.getCurrentPosition())>25){
                 ////////////////////////VERTICAL SLIDES PID//////////
                 vController.setPID(vp,vi,vd);
                 int vPos = vertical_slides.getCurrentPosition();
@@ -147,8 +150,8 @@ public class RedTerminal extends LinearOpMode {
             vertical_slides.setPower(0);
             left_arm.setPosition(0.15);
             right_arm.setPosition(0.15);
-            hTarget=1950;
-            while(opModeIsActive()&&Math.abs(hTarget-horizontal_slides.getCurrentPosition())>10){
+            hTarget=HTARGET;
+            while(opModeIsActive()&&Math.abs(hTarget-horizontal_slides.getCurrentPosition())>30){
                 ////////////////////////HORIZONTAL SLIDES PID////////
                 hController.setPID(hp,hi,hd);
                 int hPos = horizontal_slides.getCurrentPosition();
@@ -158,7 +161,7 @@ public class RedTerminal extends LinearOpMode {
             }
             left_intake.setPower(1);
             right_intake.setPower(1);
-            sleep(1500);
+            sleep(500);
             left_intake.setPower(0);
             right_intake.setPower(0);
             left_arm.setPosition(.5);
@@ -182,7 +185,9 @@ public class RedTerminal extends LinearOpMode {
             sleep(500);
             left_intake.setPower(0);
             right_intake.setPower(0);
-            vTarget=3650;
+            vTarget=VTARGET;
+            hTarget=1500;
+            wrist.setPosition(0);
             while (opModeIsActive()&&(Math.abs(vTarget-(vertical_slides.getCurrentPosition()))>20)){
                 ////////////////////////VERTICAL SLIDES PID//////////
                 vController.setPID(vp,vi,vd);
@@ -190,19 +195,38 @@ public class RedTerminal extends LinearOpMode {
                 double vPID = vController.calculate(vPos,vTarget);
                 double vPower = vPID+vf;
                 vertical_slides.setPower(vPower);
+                ////////////////////////HORIZONTAL SLIDES PID////////
+                hController.setPID(hp,hi,hd);
+                int hPos = horizontal_slides.getCurrentPosition();
+                double hPID = hController.calculate(hPos,hTarget);
+                double hPower = hPID;
+                horizontal_slides.setPower(hPower);
             }
             vTarget=0;
-            left_arm.setPosition(0);
-            right_arm.setPosition(0);
-            while (opModeIsActive()&&Math.abs(vTarget-vertical_slides.getCurrentPosition())>10){
+            hTarget=HTARGET;
+            left_arm.setPosition(0.12);
+            right_arm.setPosition(0.12);
+            left_intake.setPower(1);
+            right_intake.setPower(1);
+            while (opModeIsActive()&&Math.abs(vTarget-vertical_slides.getCurrentPosition())>25){
                 ////////////////////////VERTICAL SLIDES PID//////////
                 vController.setPID(vp,vi,vd);
                 int vPos = vertical_slides.getCurrentPosition();
                 double vPID = vController.calculate(vPos,vTarget);
                 double vPower = vPID+vf;
                 vertical_slides.setPower(vPower);
+                ////////////////////////HORIZONTAL SLIDES PID////////
+                hController.setPID(hp,hi,hd);
+                int hPos = horizontal_slides.getCurrentPosition();
+                double hPID = hController.calculate(hPos,hTarget);
+                double hPower = hPID;
+                horizontal_slides.setPower(hPower);
             }
             vertical_slides.setPower(0);
+            left_intake.setPower(0);
+            right_intake.setPower(0);
+            left_arm.setPosition(.5);
+            right_arm.setPosition(.5);
             /*drive.followTrajectory(pickup);
             drive.followTrajectory(park);
             if (LEFT == 1) {

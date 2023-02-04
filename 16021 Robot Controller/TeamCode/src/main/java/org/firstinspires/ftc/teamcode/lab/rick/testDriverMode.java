@@ -84,8 +84,8 @@ public class testDriverMode extends OpMode
     private ElapsedTime intakeSlideCooldown = new ElapsedTime();
     private SampleMecanumDrive drive;
     private PIDController hController,vController;
-    public static double hp=0.021,hi=0,hd=0.0005,hTarget = 0;
-    public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
+    public static double hp=0.03,hi=0,hd=0.0005,hTarget = 0;
+    public static double vp=0.025,vi=0,vd=0.0005,vf=0.02,vTarget = 0;
     int gamepad_A_Release = 0;
     boolean aRealeased = false;
     /////////////////////////////////////////////
@@ -203,8 +203,8 @@ public class testDriverMode extends OpMode
             right_arm.setPosition(0.55);
             wrist.setPosition(1);
             if(Math.abs(hTarget-hPos)<10) {
-                left_arm.setPosition(0.85);
-                right_arm.setPosition(0.85);
+                left_arm.setPosition(0.9);
+                right_arm.setPosition(0.9);
                 intakeMacroCooldown.reset();
                 aRealeased=false;
             }

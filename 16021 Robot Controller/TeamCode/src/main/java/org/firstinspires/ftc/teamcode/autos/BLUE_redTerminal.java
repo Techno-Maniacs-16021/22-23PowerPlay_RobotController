@@ -20,6 +20,7 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
 @Config
 @Autonomous
@@ -45,12 +46,13 @@ public class BLUE_redTerminal extends LinearOpMode {
     public static double VTARGET = 3500;
     public static double HBUFFER = 500;
     boolean gate = false;
+    private GenericDetector rf = null;
+    private String result = "";
     ElapsedTime intake = new ElapsedTime();
     double targetArmPos = 0.2;
 
     @Override
     public void runOpMode() {
-
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         ////////////////////////HARDWARE INIT////////////////
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");

@@ -22,9 +22,9 @@
      private String modelFileName = "signalSleeve.tflite";//"croppedRingRec.tflite";
      private String labelFileName = "labels.txt";//"croppedLabels.txt";
      private static Classifier.Model MODEl_TYPE = Classifier.Model.FLOAT_EFFICIENTNET;
-     private static final String LABEL_A = "1";
-     private static final String LABEL_B = "2";
-     private static final String LABEL_C = "3";
+     private static final String LABEL_A = "LEFT";
+     private static final String LABEL_B = "MIDDLE";
+     private static final String LABEL_C = "RIGHT";
 
      private String result = LABEL_B; //just a default value.
 

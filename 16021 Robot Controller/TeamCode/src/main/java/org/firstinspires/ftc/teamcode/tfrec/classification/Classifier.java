@@ -26,6 +26,7 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,7 @@ public abstract class Classifier {
      * @param numThreads The number of threads to use for classification.
      * @return A classifier with the desired configuration.
      */
+
     public static Classifier create(Activity activity, Model model, Device device, int numThreads, String modelFileName, String labelFileName, Telemetry t)
             throws Exception {
         if (model == Model.QUANTIZED_MOBILENET) {
@@ -197,7 +199,11 @@ public abstract class Classifier {
         this.setModelPath(modelFileName);
         this.setLabelPath(labelFileName);
         try {
+            Log.d(TAG, ""+ Arrays.toString(listAssetFiles(activity,"")));
+            Log.d(TAG, "trying classifier - 1");
             MappedByteBuffer tfliteModel = FileUtil.loadMappedFile(activity, getModelPath());
+            Log.d(TAG, "trying classifier - 2");
+
             switch (device) {
                 case NNAPI:
                     nnApiDelegate = new NnApiDelegate();
@@ -362,6 +368,19 @@ public abstract class Classifier {
 
     protected  String getLabelPath(){
         return labelPath;
+    }
+
+
+    private String[] listAssetFiles(Activity activity, String path) {
+
+        String [] list=null;
+        try {
+            list = activity.getAssets().list(path);
+        } catch (IOException e) {
+            return list;
+        }
+
+        return list;
     }
 
     /** Gets the TensorOperator to nomalize the input image in preprocessing. */

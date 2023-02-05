@@ -36,9 +36,6 @@ public class BLUE_redTerminal extends LinearOpMode {
     public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
-    public static double LEFT = 1; //boolean, 0 if false, 1 if true;
-    public static double MIDDLE = 0; //boolean, 0 if false, 1 if true;
-    public static double RIGHT = 0; //boolean, 0 if false, 1 if true;
     //public static double X = 36;
     //public static double Y = 5;
     //public static double HEAD = 12.5;

@@ -39,8 +39,8 @@ public class BLUE_redTerminal extends LinearOpMode {
     //public static double X = 36;
     //public static double Y = 5;
     //public static double HEAD = 12.5;
-    public static double HTARGET = 2000;
-    public static double VTARGET = 3500;
+    public static double HTARGET = 2050;
+    public static double VTARGET = 2502.78965966;
     public static double HBUFFER = 500;
     boolean gate = false;
     private GenericDetector rf = null;
@@ -107,14 +107,34 @@ public class BLUE_redTerminal extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(36, 12,Math.toRadians(0)))
                 .build();
         Trajectory left = drive.trajectoryBuilder(park.end())
-                .strafeTo(new Vector2d(58, 12))
+                .lineTo(new Vector2d(58, 12))
                 .build();
         Trajectory right = drive.trajectoryBuilder(park.end())
-                .strafeTo(new Vector2d(12, 12))
+                .lineTo(new Vector2d(12, 12))
                 .build();
+
+        try {
+            //initialize the bot
+
+            //initialize the detector. It will run on its own thread continuously
+            rf = new GenericDetector(this.hardwareMap,  this,  telemetry);
+            Thread detectThread = new Thread(rf);
+            detectThread.start();
+            telemetry.update();
+        } catch (Exception ex) {
+            telemetry.addData("Error", String.format("Unable to initialize Detector. %s", ex.getMessage()));
+            telemetry.update();
+            sleep(5000);
+            return;
+        }
         while (!isStopRequested()&&!isStarted()){
+            telemetry.addLine(rf.getResult());
+            telemetry.update();
         }
         waitForStart();
+        rf.stopDetection();
+
+        result = rf.getResult();
 
         while (opModeIsActive()) {
 
@@ -154,9 +174,9 @@ public class BLUE_redTerminal extends LinearOpMode {
                         gate = true;
                         intake.reset();
                     }
-                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<30&&gate&intake.time()>.1) {
-                        left_intake.setPower(0);
-                        right_intake.setPower(0);
+                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<30&&gate&intake.time()>.15) {
+                        left_intake.setPower(0.1);
+                        right_intake.setPower(0.1);
                         left_arm.setPosition(.5);
                         right_arm.setPosition(.5);
                     }
@@ -171,10 +191,10 @@ public class BLUE_redTerminal extends LinearOpMode {
                 horizontal_slides.setPower(-.5);
                 left_arm.setPosition(.9);
                 right_arm.setPosition(.9);
-                sleep(450);
+                sleep(350);
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
-                sleep(300);
+                sleep(350);
                 left_intake.setPower(0);
                 right_intake.setPower(0);
                 left_arm.setPosition(.5);
@@ -182,7 +202,7 @@ public class BLUE_redTerminal extends LinearOpMode {
                 targetArmPos -= .04;
                 //Cone_Farm//
             }
-            vTarget = 3500;
+            vTarget = VTARGET;
             while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));
             vTarget = 0;
             while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));

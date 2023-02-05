@@ -46,7 +46,7 @@ public class BLUE_redTerminal extends LinearOpMode {
     private GenericDetector rf = null;
     private String result = "";
     ElapsedTime intake = new ElapsedTime();
-    double targetArmPos = 0.2;
+    double targetArmPos = 0.18;
 
     @Override
     public void runOpMode() {
@@ -100,7 +100,7 @@ public class BLUE_redTerminal extends LinearOpMode {
         Trajectory auto = drive.trajectoryBuilder(startPose)
                 .lineTo(new Vector2d(36, 14))
                 .build();
-        Trajectory farm = drive.trajectoryBuilder(auto.end())
+        Trajectory farm = drive.trajectoryBuilder(startPose)
                 .lineToLinearHeading(new Pose2d(36.5,5,Math.toRadians(12.5)))
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
@@ -130,7 +130,7 @@ public class BLUE_redTerminal extends LinearOpMode {
                 telemetry.addLine("Parking Middle");
                 telemetry.update();
             }
-            drive.followTrajectory(auto);
+            //drive.followTrajectory(auto);
             drive.followTrajectory(farm);
             //Cone_Farm//
             for (int i=0;i<REPEAT;i++) {
@@ -171,10 +171,10 @@ public class BLUE_redTerminal extends LinearOpMode {
                 horizontal_slides.setPower(-.5);
                 left_arm.setPosition(.9);
                 right_arm.setPosition(.9);
-                sleep(350);
+                sleep(450);
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
-                sleep(350);
+                sleep(300);
                 left_intake.setPower(0);
                 right_intake.setPower(0);
                 left_arm.setPosition(.5);

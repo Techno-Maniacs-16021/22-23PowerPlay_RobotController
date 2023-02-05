@@ -52,6 +52,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.modules.RobotIntialization;
 import org.firstinspires.ftc.teamcode.tfrec.Detector;
 
 /**
@@ -83,6 +84,7 @@ public class testDriverMode extends OpMode
     private ElapsedTime outTakeCooldown = new ElapsedTime();
     private ElapsedTime intakeSlideCooldown = new ElapsedTime();
     private SampleMecanumDrive drive;
+    private RobotIntialization robotIntialization;
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.0005,hTarget = 0;
     public static double vp=0.025,vi=0,vd=0.0005,vf=0.02,vTarget = 0;

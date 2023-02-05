@@ -115,17 +115,35 @@ public class BLUE_redTerminal extends LinearOpMode {
         Trajectory right = drive.trajectoryBuilder(park.end())
                 .strafeTo(new Vector2d(12, 12))
                 .build();
+
+        try {
+            //initialize the bot
+
+            //initialize the detector. It will run on its own thread continuously
+            rf = new GenericDetector(this.hardwareMap,  this,  telemetry);
+            Thread detectThread = new Thread(rf);
+            detectThread.start();
+            telemetry.update();
+        } catch (Exception ex) {
+            telemetry.addData("Error", String.format("Unable to initialize Detector. %s", ex.getMessage()));
+            telemetry.update();
+            sleep(5000);
+            return;
+        }
         while (!isStopRequested()&&!isStarted()){
+            telemetry.addLine(result);
+            telemetry.update();
         }
         waitForStart();
-
+        rf.stopDetection();
+        result = rf.getResult();
         while (opModeIsActive()) {
 
-            if (LEFT == 1) {
+            if (result.equals("LEFT")) {
                 telemetry.addLine("Parking Left");
                 telemetry.update();
             }
-            else if (RIGHT == 1) {
+            else if (result.equals("RIGHT")) {
                 telemetry.addLine("Parking Right");
                 telemetry.update();
             }

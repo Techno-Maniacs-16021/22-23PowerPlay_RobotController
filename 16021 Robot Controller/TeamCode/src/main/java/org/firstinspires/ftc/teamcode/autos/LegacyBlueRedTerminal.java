@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
 @Config
 @Autonomous
-public class BLUE_redTerminal extends LinearOpMode {
+public class LegacyBlueRedTerminal extends LinearOpMode {
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;
     CRServo left_intake, right_intake;

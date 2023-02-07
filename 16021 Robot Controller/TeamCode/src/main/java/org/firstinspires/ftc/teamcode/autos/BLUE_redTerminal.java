@@ -21,6 +21,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
+import org.opencv.core.Mat;
 
 @Config
 @Autonomous
@@ -36,17 +37,18 @@ public class BLUE_redTerminal extends LinearOpMode {
     public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
-    //public static double X = 36;
-    //public static double Y = 5;
-    //public static double HEAD = 12.5;
-    public static double HTARGET = 2050;
-    public static double VTARGET = 2502.78965966;
+    public static double X = 37.5;
+    public static double Y = 5;
+    public static double HEAD = 12.5;
+    public static double HTARGET = 2100;
+    public static double VTARGET = 3510;
     public static double HBUFFER = 500;
+    public static double topConeAngle = .16;
     boolean gate = false;
     private GenericDetector rf = null;
     private String result = "";
     ElapsedTime intake = new ElapsedTime();
-    double targetArmPos = 0.18;
+    double targetArmPos = topConeAngle;
 
     @Override
     public void runOpMode() {
@@ -96,21 +98,17 @@ public class BLUE_redTerminal extends LinearOpMode {
         Pose2d startPose = new Pose2d(36, 64, Math.toRadians(90));
 
         drive.setPoseEstimate(startPose);
-
-        Trajectory auto = drive.trajectoryBuilder(startPose)
-                .lineTo(new Vector2d(36, 14))
-                .build();
         Trajectory farm = drive.trajectoryBuilder(startPose)
-                .lineToLinearHeading(new Pose2d(36.5,5,Math.toRadians(12.5)))
+                .lineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)))
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
                 .lineToLinearHeading(new Pose2d(36, 12,Math.toRadians(0)))
                 .build();
-        Trajectory left = drive.trajectoryBuilder(park.end())
-                .lineTo(new Vector2d(58, 12))
+        Trajectory left = drive.trajectoryBuilder(farm.end())
+                .lineToLinearHeading(new Pose2d(58, 12,Math.toRadians(0)))
                 .build();
-        Trajectory right = drive.trajectoryBuilder(park.end())
-                .lineTo(new Vector2d(12, 12))
+        Trajectory right = drive.trajectoryBuilder(farm.end())
+                .lineToLinearHeading(new Pose2d(12, 12, Math.toRadians(90)))
                 .build();
 
         try {
@@ -126,10 +124,6 @@ public class BLUE_redTerminal extends LinearOpMode {
             telemetry.update();
             sleep(5000);
             return;
-        }
-        while (!isStopRequested()&&!isStarted()){
-            telemetry.addLine(rf.getResult());
-            telemetry.update();
         }
         waitForStart();
         rf.stopDetection();
@@ -159,7 +153,7 @@ public class BLUE_redTerminal extends LinearOpMode {
                 left_arm.setPosition(targetArmPos);
                 right_arm.setPosition(targetArmPos);
                 wrist.setPosition(0);
-                while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) {
+                while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 30) {
                     vertical_slides.setPower(verticalPID(vTarget, vController, vertical_slides.getCurrentPosition()));
                     horizontal_slides.setPower(horizontalPID(hTarget, hController, horizontal_slides.getCurrentPosition()));
                 }
@@ -168,25 +162,27 @@ public class BLUE_redTerminal extends LinearOpMode {
                 vTarget = 0;
                 hTarget = HTARGET;
                 while ((opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20)||(opModeIsActive()&&getError(horizontal_slides.getCurrentPosition(), hTarget) > 30)) {
+
                     vertical_slides.setPower(verticalPID(vTarget, vController, vertical_slides.getCurrentPosition()));
-                    horizontal_slides.setPower(horizontalPID(hTarget, hController, horizontal_slides.getCurrentPosition()));
-                    if (getError(horizontal_slides.getCurrentPosition(), hTarget) > 30) {
+                    if(vertical_slides.getCurrentPosition()<2500) horizontal_slides.setPower(horizontalPID(hTarget, hController, horizontal_slides.getCurrentPosition()));
+                    if (getError(horizontal_slides.getCurrentPosition(), hTarget) > 60) {
                         gate = true;
                         intake.reset();
                     }
-                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<30&&gate&intake.time()>.15) {
-                        left_intake.setPower(0.1);
-                        right_intake.setPower(0.1);
+                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<60&&gate&intake.time()>.15) {
+                        left_intake.setPower(0.01);
+                        right_intake.setPower(0.01);
                         left_arm.setPosition(.5);
                         right_arm.setPosition(.5);
                     }
-                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<30&&gate&&intake.time()>.3) {
+                    if (getError(horizontal_slides.getCurrentPosition(), hTarget)<60&&gate&&intake.time()>.3) {
                         gate=false;
                         wrist.setPosition(1);
                         hTarget=0;
                     }
 
                 }
+                vertical_slides.setPower(-.5);
                 while (opModeIsActive() && getError(horizontal_slides.getCurrentPosition(), hTarget) > 10) horizontal_slides.setPower(horizontalPID(hTarget, hController, horizontal_slides.getCurrentPosition()));
                 horizontal_slides.setPower(-.5);
                 left_arm.setPosition(.9);
@@ -199,20 +195,25 @@ public class BLUE_redTerminal extends LinearOpMode {
                 right_intake.setPower(0);
                 left_arm.setPosition(.5);
                 right_arm.setPosition(.5);
-                targetArmPos -= .04;
+                targetArmPos -= (topConeAngle/5);
+                sleep(50);
                 //Cone_Farm//
             }
             vTarget = VTARGET;
-            while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));
+            while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 30) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));
             vTarget = 0;
-            while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));
-            drive.followTrajectory(park);
+            vertical_slides.setPower(-1);
+            sleep(150);
             if (result.equals("LEFT")) {
                 drive.followTrajectory(left);
             }
             else if (result.equals("RIGHT")) {
                 drive.followTrajectory(right);
             }
+            else {
+                drive.followTrajectory(park);
+            }
+            while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 20) vertical_slides.setPower(verticalPID(vTarget,vController,vertical_slides.getCurrentPosition()));
             requestOpModeStop();
 
         }

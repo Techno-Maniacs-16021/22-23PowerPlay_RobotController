@@ -5,6 +5,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODE
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -24,6 +25,7 @@ import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
 @Config
 @Autonomous
+@Disabled
 public class LegacyBlueRedTerminal extends LinearOpMode {
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;

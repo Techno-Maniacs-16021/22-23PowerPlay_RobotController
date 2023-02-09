@@ -48,6 +48,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -69,7 +70,8 @@ import org.firstinspires.ftc.teamcode.tfrec.Detector;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 @Config
-@TeleOp
+@TeleOp(name = "dontUse")
+@Disabled
 public class testDriverMode extends OpMode
 {
     /////////////////////////////////////////////
@@ -77,17 +79,16 @@ public class testDriverMode extends OpMode
     CRServo left_intake, right_intake;
     DcMotorEx horizontal_slides, vertical_slides;
     AnalogInput rightArmPosition,leftArmPosition;
+
     /////////////////////////////////////////////
     private ElapsedTime runtime = new ElapsedTime();
-    private ElapsedTime wristCooldown = new ElapsedTime();
     private ElapsedTime intakeMacroCooldown = new ElapsedTime();
-    private ElapsedTime outTakeCooldown = new ElapsedTime();
-    private ElapsedTime intakeSlideCooldown = new ElapsedTime();
+    private ElapsedTime loopTime = new ElapsedTime();
     private SampleMecanumDrive drive;
     private RobotIntialization robotIntialization;
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.0005,hTarget = 0;
-    public static double vp=0.025,vi=0,vd=0.0005,vf=0.02,vTarget = 0;
+    public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
     int gamepad_A_Release = 0;
     boolean aRealeased = false;
     /////////////////////////////////////////////
@@ -134,6 +135,7 @@ public class testDriverMode extends OpMode
 ////////////////////////STATUS UPDATE////////////////
         telemetry.addData("Status", "Initialized");
 /////////////////////////////////////////////////////
+        vp=0.0225;vi=0;vd=0.0005;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.0005;hTarget = 0;
     }
     @Override
     public void init_loop() {
@@ -254,6 +256,8 @@ public class testDriverMode extends OpMode
         telemetry.addData("vertical position: ",vPos);
         telemetry.addData("vertical target position: ",vTarget);
         telemetry.addData("vertical power: ",vPower);
+        telemetry.addData("loopTime: ", loopTime.time());
+        loopTime.reset();
         telemetry.update();
 /////////////////////////////////////////////////////
     }

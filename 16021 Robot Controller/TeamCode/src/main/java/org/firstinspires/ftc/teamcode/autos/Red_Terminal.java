@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.autos;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -21,11 +20,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
-import org.opencv.core.Mat;
 
 @Config
-@Autonomous
-public class BLUE_redTerminal extends LinearOpMode {
+@Autonomous(preselectTeleOp = "Driver_Mode")
+public class Red_Terminal extends LinearOpMode {
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;
     CRServo left_intake, right_intake;
@@ -33,25 +31,27 @@ public class BLUE_redTerminal extends LinearOpMode {
     AnalogInput rightArmPosition,leftArmPosition;
     /////////////////////////////////////////////
     private PIDController hController,vController;
-    public static double hp=0.03,hi=0,hd=0.0005,hTarget = 0;
-    public static double vp=0.0225,vi=0,vd=0.0005,vf=0.01,vTarget = 0;
+    public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
+    public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
-    public static double X = 37.5;
+    public static double X = 37;
     public static double Y = 5;
-    public static double HEAD = 12.5;
+    public static double HEAD = 12;
     public static double HTARGET = 2100;
-    public static double VTARGET = 3510;
+    public static double VTARGET = 3495;
     public static double HBUFFER = 500;
     public static double topConeAngle = .16;
     boolean gate = false;
     private GenericDetector rf = null;
     private String result = "";
     ElapsedTime intake = new ElapsedTime();
+    private ElapsedTime loopTime = new ElapsedTime();
     double targetArmPos = topConeAngle;
 
     @Override
     public void runOpMode() {
+        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         ////////////////////////HARDWARE INIT////////////////
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");
@@ -156,6 +156,9 @@ public class BLUE_redTerminal extends LinearOpMode {
                 while (opModeIsActive() && getError(vertical_slides.getCurrentPosition(), vTarget) > 30) {
                     vertical_slides.setPower(verticalPID(vTarget, vController, vertical_slides.getCurrentPosition()));
                     horizontal_slides.setPower(horizontalPID(hTarget, hController, horizontal_slides.getCurrentPosition()));
+                    telemetry.addData("loop time: ", loopTime.time());
+                    loopTime.reset();
+                    telemetry.update();
                 }
                 left_intake.setPower(1);
                 right_intake.setPower(1);
@@ -180,6 +183,9 @@ public class BLUE_redTerminal extends LinearOpMode {
                         wrist.setPosition(1);
                         hTarget=0;
                     }
+                    telemetry.addData("loop time: ", loopTime.time());
+                    loopTime.reset();
+                    telemetry.update();
 
                 }
                 vertical_slides.setPower(-.5);

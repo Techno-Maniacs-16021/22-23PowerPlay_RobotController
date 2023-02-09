@@ -38,8 +38,7 @@ public class Driver_Mode extends OpMode
     AnalogInput rightArmPosition,leftArmPosition;
     RevColorSensorV3 cone_detector;
     /////////////////////////////////////////////
-    private ElapsedTime runtime = new ElapsedTime();
-    private ElapsedTime intakeMacroCooldown = new ElapsedTime();
+    private ElapsedTime armCooldown = new ElapsedTime();
     private ElapsedTime loopTime = new ElapsedTime();
     private SampleMecanumDrive drive;
     private RobotIntialization robotIntialization;
@@ -47,8 +46,9 @@ public class Driver_Mode extends OpMode
     public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
     public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
     public static boolean farmingMode = true;
-    public static double armPosition,wristPosition,intakePower;
+    public static double armPosition,wristPosition,intakePower,speedMultiplier;
     boolean intaked,outaked,OVERIDE;
+    public static int HIGH,MID;
     /////////////////////////////////////////////
     @Override
     public void init(){
@@ -92,8 +92,9 @@ public class Driver_Mode extends OpMode
 ////////////////////////STATUS UPDATE////////////////
         telemetry.addData("Status", "Initialized");
 /////////////////////////////////////////////////////
-        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
+        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;speedMultiplier=1;
         armPosition = 0.5;wristPosition = 0;intakePower=0;
+        HIGH = 3500;MID=2100;
         intaked = false; outaked=false; farmingMode = false; OVERIDE = false;
     }
     @Override
@@ -110,20 +111,19 @@ public class Driver_Mode extends OpMode
     }
     @Override
     public void loop(){
+        if(!gamepad2.b)
 ////////////////////////HORIZONTAL SLIDES PID////////
         hController.setPID(hp,hi,hd);
         int hPos = horizontal_slides.getCurrentPosition();
         double hPID = hController.calculate(hPos,hTarget);
         double hPower = hPID;
-        horizontal_slides.setPower(hPower);
-        //horizontal_slides.setPower(gamepad1.left_stick_x);
+        if(!gamepad2.b)horizontal_slides.setPower(hPower);
 ////////////////////////VERTICAL SLIDES PID//////////
         vController.setPID(vp,vi,vd);
         int vPos = vertical_slides.getCurrentPosition();
         double vPID = vController.calculate(vPos,vTarget);
         double vPower = vPID+vf;
-        vertical_slides.setPower(vPower);
-        //vertical_slides.setPower(gamepad1.left_stick_y);
+        if(!gamepad2.b)vertical_slides.setPower(vPower);
 ////////////////////////ARM ANG VARS/////////////////
         double leftArmAngle = ((leftArmPosition.getVoltage()-0.82) /3.3) * 360;
         double rightArmAngle = ((2.499-rightArmPosition.getVoltage())/3.3) * 360;
@@ -137,17 +137,20 @@ public class Driver_Mode extends OpMode
 ////////////////////////FARMING MODE/////////////////
         if(gamepad2.a||farmingMode){
             //loop starter or breaker
-            if(gamepad1.dpad_up) OVERIDE = true;
+            if(gamepad1.dpad_up) {
+                OVERIDE = true;
+                intaked = false;
+                outaked = false;
+            }
             else OVERIDE = false;
+            if (gamepad1.dpad_up) {
+                wristPosition = 0;
+                armPosition = 0.5;
+                intakePower = 0;
+            } else if (gamepad1.dpad_left) {
+                armPosition = 0.01;
+            }
             if(!OVERIDE) {
-                if (gamepad1.dpad_up) {
-                    wristPosition = 0;
-                    armPosition = 0.5;
-                    intakePower = 0;
-                } else if (gamepad1.dpad_left) {
-                    armPosition = 0.01;
-                }
-                //
                 if (armAngle < 20 && gamepad1.a) {
                     hTarget += 50;
                     intakePower = 1;
@@ -162,8 +165,8 @@ public class Driver_Mode extends OpMode
                 if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 10) {
                     armPosition = 0.9;
                     if (armAngle > 155) intakePower = -1;
-                    if (cone_detector.getDistance(DistanceUnit.INCH) < 2) vTarget = 3500;
-                    if (vTarget == 3500 && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
+                    if (cone_detector.getDistance(DistanceUnit.INCH) < 2) vTarget = HIGH;
+                    if (vTarget == HIGH && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
                         vTarget = 0;
                         intaked = false;
                         outaked = true;
@@ -180,7 +183,21 @@ public class Driver_Mode extends OpMode
         }
 ////////////////////////MANUAL MODE//////////////////
         else if(gamepad2.b){
-
+            horizontal_slides.setPower(-gamepad1.left_stick_x);
+            vertical_slides.setPower(-gamepad1.right_stick_y);
+            if(gamepad1.a)intakePower=1;
+            else if(gamepad1.b)intakePower=-1;
+            else intakePower=0;
+            if(gamepad1.dpad_left)wristPosition=0;
+            else if(gamepad1.dpad_right)wristPosition=1;
+            if(gamepad1.left_bumper&&armCooldown.time()>0.05&&armPosition<1){
+                armPosition+=0.025;
+                armCooldown.reset();
+            }
+            else if(gamepad1.left_bumper&&armCooldown.time()>0.05&&armPosition>0){
+                armPosition-=0.025;
+                armCooldown.reset();
+            }
         }
 ////////////////////////RESET MODE///////////////////
         else if(gamepad2.left_trigger>0&&gamepad2.right_trigger>0&&gamepad1.left_trigger>0&&gamepad1.right_trigger>0){
@@ -195,14 +212,56 @@ public class Driver_Mode extends OpMode
         }
 ////////////////////////CIRCUIT MODE/////////////////
         else{
+            if(gamepad1.dpad_up) {
+                OVERIDE = true;
+                intaked = false;
+            }
+            else OVERIDE = false;
+            if (gamepad1.dpad_up) {
+                wristPosition = 0;
+                armPosition = 0.5;
+                intakePower = 0;
+            } else if (gamepad1.dpad_left) {
+                armPosition = 0.01;
+            }
+            if(!OVERIDE) {
+                if (armAngle < 20 && gamepad1.a) {
+                    hTarget += 50;
+                    intakePower = 1;
+                }
+                if (horizontal_slides.getCurrentPosition() > 25 && !gamepad1.a) {
+                    intakePower = 0;
+                    armPosition = .6;
+                    wristPosition = 1;
+                    hTarget = 0;
+                    intaked = true;
+                }
+                if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 10) {
+                    armPosition = 0.9;
+                    if (armAngle > 155) intakePower = -1;
+                    if(cone_detector.getDistance(DistanceUnit.INCH)<2||gamepad1.x) {
+                        if (gamepad1.y) vTarget = HIGH;
+                        else if (gamepad1.b) vTarget = MID;
+                    }
+                    if (vTarget > 0 && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
+                        vTarget = 0;
+                        armPosition=0.5;
+                        wristPosition=0;
+                        intakePower=0;
+                        intaked = false;
+                    }
+                }
+            }
 
         }
 ////////////////////////DRIVE LOGIC//////////////////
+        if(gamepad2.right_trigger>0)speedMultiplier=gamepad2.right_trigger;
+        else speedMultiplier =1;
         drive.setWeightedDrivePower(
                 new Pose2d(
-                        -gamepad2.left_stick_y,
-                        -gamepad2.left_stick_x,
-                        -gamepad2.right_stick_x
+                        -gamepad2.left_stick_y*speedMultiplier,
+                        -gamepad2.left_stick_x*speedMultiplier,
+                        -gamepad2.right_stick_x*speedMultiplier
                 )
         );
         drive.update();

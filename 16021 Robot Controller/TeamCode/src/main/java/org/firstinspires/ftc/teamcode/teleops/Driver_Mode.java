@@ -48,7 +48,7 @@ public class Driver_Mode extends OpMode
     public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
     public static boolean farmingMode = true;
     public static double armPosition,wristPosition,intakePower;
-    boolean intaked,outaked;
+    boolean intaked,outaked,OVERIDE;
     /////////////////////////////////////////////
     @Override
     public void init(){
@@ -94,7 +94,7 @@ public class Driver_Mode extends OpMode
 /////////////////////////////////////////////////////
         vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
         armPosition = 0.5;wristPosition = 0;intakePower=0;
-        intaked = false; outaked=false; farmingMode = false;
+        intaked = false; outaked=false; farmingMode = false; OVERIDE = false;
     }
     @Override
     public void init_loop(){
@@ -137,41 +137,44 @@ public class Driver_Mode extends OpMode
 ////////////////////////FARMING MODE/////////////////
         if(gamepad2.a||farmingMode){
             //loop starter or breaker
-            if(gamepad1.dpad_up){
-                wristPosition=0;
-                armPosition=0.5;
-                intakePower=0;
-            }
-            else if(gamepad1.dpad_left){
-                armPosition=0.01;
-            }
-            //
-            if(armAngle<20&&gamepad1.a){
-                hTarget+=50;
-                intakePower =1;
-            }
-            if(horizontal_slides.getCurrentPosition()>25&&!gamepad1.a){
-                intakePower=0;
-                armPosition=.6;
-                wristPosition=1;
-                hTarget=0;
-                intaked = true;
-            }
-            if(intaked&&getError(horizontal_slides.getCurrentPosition(),hTarget)<10){
-                armPosition = 0.9;
-                if(armAngle>155)intakePower=-1;
-                if(cone_detector.getDistance(DistanceUnit.INCH)<2)vTarget=3500;
-                if(vTarget==3500&&getError(vertical_slides.getCurrentPosition(),vTarget)<10){
-                    vTarget = 0;
-                    intaked = false;
-                    outaked = true;
+            if(gamepad1.dpad_up) OVERIDE = true;
+            else OVERIDE = false;
+            if(!OVERIDE) {
+                if (gamepad1.dpad_up) {
+                    wristPosition = 0;
+                    armPosition = 0.5;
+                    intakePower = 0;
+                } else if (gamepad1.dpad_left) {
+                    armPosition = 0.01;
                 }
-            }
-            if(outaked){
-                armPosition=0.01;
-                intakePower=0;
-                wristPosition=0;
-                outaked = false;
+                //
+                if (armAngle < 20 && gamepad1.a) {
+                    hTarget += 50;
+                    intakePower = 1;
+                }
+                if (horizontal_slides.getCurrentPosition() > 25 && !gamepad1.a) {
+                    intakePower = 0;
+                    armPosition = .6;
+                    wristPosition = 1;
+                    hTarget = 0;
+                    intaked = true;
+                }
+                if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 10) {
+                    armPosition = 0.9;
+                    if (armAngle > 155) intakePower = -1;
+                    if (cone_detector.getDistance(DistanceUnit.INCH) < 2) vTarget = 3500;
+                    if (vTarget == 3500 && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
+                        vTarget = 0;
+                        intaked = false;
+                        outaked = true;
+                    }
+                }
+                if (outaked) {
+                    armPosition = 0.01;
+                    intakePower = 0;
+                    wristPosition = 0;
+                    outaked = false;
+                }
             }
 
         }

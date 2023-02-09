@@ -4,6 +4,7 @@ import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODE
 
 import com.acmerobotics.dashboard.config.Config;
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -18,6 +19,7 @@ import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
@@ -29,6 +31,7 @@ public class Red_Terminal extends LinearOpMode {
     CRServo left_intake, right_intake;
     DcMotorEx horizontal_slides, vertical_slides;
     AnalogInput rightArmPosition,leftArmPosition;
+    RevColorSensorV3 cone_detector;
     /////////////////////////////////////////////
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
@@ -46,6 +49,8 @@ public class Red_Terminal extends LinearOpMode {
     private GenericDetector rf = null;
     private String result = "";
     ElapsedTime intake = new ElapsedTime();
+    ElapsedTime elapsedTime = new ElapsedTime();
+    ElapsedTime time = new ElapsedTime();
     private ElapsedTime loopTime = new ElapsedTime();
     double targetArmPos = topConeAngle;
 
@@ -61,6 +66,7 @@ public class Red_Terminal extends LinearOpMode {
         right_intake = hardwareMap.get(CRServo.class,"RI");
         rightArmPosition = hardwareMap.get(AnalogInput.class,"rArmPos");
         leftArmPosition = hardwareMap.get(AnalogInput.class,"lArmPos");
+        cone_detector = hardwareMap.get(RevColorSensorV3.class,"coneDetector");
         vertical_slides = hardwareMap.get(DcMotorEx.class,"V");
         horizontal_slides = hardwareMap.get(DcMotorEx.class,"H");
 ////////////////////////SET PWM RANGE////////////////
@@ -126,6 +132,8 @@ public class Red_Terminal extends LinearOpMode {
             return;
         }
         waitForStart();
+        elapsedTime.reset();
+        time.reset();
         rf.stopDetection();
 
         result = rf.getResult();
@@ -196,7 +204,8 @@ public class Red_Terminal extends LinearOpMode {
                 sleep(350);
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
-                sleep(350);
+                time.reset();
+                while (opModeIsActive()&&cone_detector.getDistance(DistanceUnit.INCH)>1&&time.time()<.5){/**COOLDOWN FOR CONE**/}
                 left_intake.setPower(0);
                 right_intake.setPower(0);
                 left_arm.setPosition(.5);

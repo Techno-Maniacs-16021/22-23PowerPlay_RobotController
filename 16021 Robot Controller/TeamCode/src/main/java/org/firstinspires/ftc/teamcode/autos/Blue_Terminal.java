@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.autos;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -18,6 +20,7 @@ import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
@@ -29,6 +32,7 @@ public class Blue_Terminal extends LinearOpMode {
     CRServo left_intake, right_intake;
     DcMotorEx horizontal_slides, vertical_slides;
     AnalogInput rightArmPosition,leftArmPosition;
+    RevColorSensorV3 cone_detector;
     /////////////////////////////////////////////
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
@@ -37,15 +41,18 @@ public class Blue_Terminal extends LinearOpMode {
     public static double REPEAT = 5; //number of extra cones;
     public static double X = -37;
     public static double Y = 5;
-    public static double HEAD = -12;
+    public static double HEAD = 164;
     public static double HTARGET = 2100;
     public static double VTARGET = 3495;
     public static double HBUFFER = 500;
     public static double topConeAngle = .16;
+    public static double tangent = 85;
     boolean gate = false;
     private GenericDetector rf = null;
     private String result = "";
     ElapsedTime intake = new ElapsedTime();
+    ElapsedTime elapsedTime = new ElapsedTime();
+    ElapsedTime time = new ElapsedTime();
     private ElapsedTime loopTime = new ElapsedTime();
     double targetArmPos = topConeAngle;
 
@@ -61,6 +68,7 @@ public class Blue_Terminal extends LinearOpMode {
         right_intake = hardwareMap.get(CRServo.class,"RI");
         rightArmPosition = hardwareMap.get(AnalogInput.class,"rArmPos");
         leftArmPosition = hardwareMap.get(AnalogInput.class,"lArmPos");
+        cone_detector = hardwareMap.get(RevColorSensorV3.class,"coneDetector");
         vertical_slides = hardwareMap.get(DcMotorEx.class,"V");
         horizontal_slides = hardwareMap.get(DcMotorEx.class,"H");
 ////////////////////////SET PWM RANGE////////////////
@@ -98,17 +106,17 @@ public class Blue_Terminal extends LinearOpMode {
         Pose2d startPose = new Pose2d(-36, 64, Math.toRadians(90));
 
         drive.setPoseEstimate(startPose);
-        Trajectory farm = drive.trajectoryBuilder(startPose)
-                .lineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)))
+        Trajectory farm = drive.trajectoryBuilder(startPose, true)
+                .splineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)),Math.toRadians(tangent))
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(-36, 12,Math.toRadians(0)))
-                .build();
-        Trajectory left = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(-12, 12,Math.toRadians(0)))
+                .lineToLinearHeading(new Pose2d(-36, 12,Math.toRadians(180)))
                 .build();
         Trajectory right = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(-58, 12, Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(-58, 12,Math.toRadians(180)))
+                .build();
+        Trajectory left = drive.trajectoryBuilder(farm.end())
+                .lineToLinearHeading(new Pose2d(-12, 12, Math.toRadians(90)))
                 .build();
 
         try {
@@ -126,6 +134,8 @@ public class Blue_Terminal extends LinearOpMode {
             return;
         }
         waitForStart();
+        elapsedTime.reset();
+        time.reset();
         rf.stopDetection();
 
         result = rf.getResult();
@@ -144,7 +154,6 @@ public class Blue_Terminal extends LinearOpMode {
                 telemetry.addLine("Parking Middle");
                 telemetry.update();
             }
-            //drive.followTrajectory(auto);
             drive.followTrajectory(farm);
             //Cone_Farm//
             for (int i=0;i<REPEAT;i++) {
@@ -196,7 +205,8 @@ public class Blue_Terminal extends LinearOpMode {
                 sleep(350);
                 left_intake.setPower(-1);
                 right_intake.setPower(-1);
-                sleep(350);
+                time.reset();
+                while (opModeIsActive()&&cone_detector.getDistance(DistanceUnit.INCH)>1&&time.time()<.5){/**COOLDOWN FOR CONE**/}
                 left_intake.setPower(0);
                 right_intake.setPower(0);
                 left_arm.setPosition(.5);

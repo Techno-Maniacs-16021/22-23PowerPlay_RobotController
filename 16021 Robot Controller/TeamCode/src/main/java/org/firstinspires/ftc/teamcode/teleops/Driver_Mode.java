@@ -99,11 +99,7 @@ public class Driver_Mode extends OpMode
     }
     @Override
     public void init_loop(){
-        left_arm.setPosition(armPosition);
-        right_arm.setPosition(armPosition);
-        wrist.setPosition(wristPosition);
-        left_intake.setPower(intakePower);
-        right_intake.setPower(intakePower);
+
     }
     @Override
     public void start(){
@@ -255,8 +251,7 @@ public class Driver_Mode extends OpMode
 
         }
 ////////////////////////DRIVE LOGIC//////////////////
-        if(gamepad2.right_trigger>0)speedMultiplier=gamepad2.right_trigger;
-        else speedMultiplier =1;
+        speedMultiplier = 1-gamepad2.right_trigger;
         drive.setWeightedDrivePower(
                 new Pose2d(
                         -gamepad2.left_stick_y*speedMultiplier,

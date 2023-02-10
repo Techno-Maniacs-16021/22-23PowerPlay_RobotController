@@ -78,10 +78,6 @@ public class Driver_Mode extends OpMode
 ////////////////////////ENCODER RESET////////////////
         vertical_slides.setMode(RUN_WITHOUT_ENCODER);
         horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
-////////////////////////INIT POSITIONS///////////////
-        left_arm.setPosition(0);
-        right_arm.setPosition(0);
-        wrist.setPosition(0);
 ////////////////////////PID CONTROLLERS//////////////
         hController = new PIDController(hp,hi,hd);
         vController = new PIDController(vp,vi,vd);
@@ -100,10 +96,15 @@ public class Driver_Mode extends OpMode
     @Override
     public void init_loop(){
 
+
     }
     @Override
     public void start(){
-
+        left_arm.setPosition(armPosition);
+        right_arm.setPosition(armPosition);
+        wrist.setPosition(wristPosition);
+        left_intake.setPower(intakePower);
+        right_intake.setPower(intakePower);
     }
     @Override
     public void loop(){
@@ -144,7 +145,7 @@ public class Driver_Mode extends OpMode
                 armPosition = 0.5;
                 intakePower = 0;
             } else if (gamepad1.dpad_left) {
-                armPosition = 0.01;
+                armPosition = 0.0;
             }
             if(!OVERIDE) {
                 if (armAngle < 20 && gamepad1.a) {
@@ -218,7 +219,7 @@ public class Driver_Mode extends OpMode
                 armPosition = 0.5;
                 intakePower = 0;
             } else if (gamepad1.dpad_left) {
-                armPosition = 0.01;
+                armPosition = 0.0;
             }
             if(!OVERIDE) {
                 if (armAngle < 20 && gamepad1.a) {

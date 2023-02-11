@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.autos;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -36,17 +35,17 @@ public class Blue_Terminal extends LinearOpMode {
     /////////////////////////////////////////////
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
-    public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
+    public static double  vp=0.02,vi=0,vd=0.0003,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
-    public static double X = -37;
-    public static double Y = 5;
-    public static double HEAD = 164;
+    public static double X = -39;
+    public static double Y = 7;
+    public static double HEAD = 168;
+    public static double tangent = 160;
     public static double HTARGET = 2100;
     public static double VTARGET = 3495;
     public static double HBUFFER = 500;
     public static double topConeAngle = .16;
-    public static double tangent = 85;
     boolean gate = false;
     private GenericDetector rf = null;
     private String result = "";
@@ -58,7 +57,7 @@ public class Blue_Terminal extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
+        vp=0.02;vi=0;vd=0.0003;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         ////////////////////////HARDWARE INIT////////////////
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");
@@ -106,8 +105,8 @@ public class Blue_Terminal extends LinearOpMode {
         Pose2d startPose = new Pose2d(-36, 64, Math.toRadians(90));
 
         drive.setPoseEstimate(startPose);
-        Trajectory farm = drive.trajectoryBuilder(startPose, true)
-                .splineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)),Math.toRadians(tangent))
+        Trajectory farm = drive.trajectoryBuilder(startPose,true)
+                .splineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)),tangent)
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
                 .lineToLinearHeading(new Pose2d(-36, 12,Math.toRadians(180)))
@@ -154,6 +153,7 @@ public class Blue_Terminal extends LinearOpMode {
                 telemetry.addLine("Parking Middle");
                 telemetry.update();
             }
+            //drive.followTrajectory(auto);
             drive.followTrajectory(farm);
             //Cone_Farm//
             for (int i=0;i<REPEAT;i++) {

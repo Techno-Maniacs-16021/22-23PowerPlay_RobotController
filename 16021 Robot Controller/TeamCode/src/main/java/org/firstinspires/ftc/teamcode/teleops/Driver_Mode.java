@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleops;
 
+import static android.os.SystemClock.sleep;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER;
 
@@ -43,8 +44,8 @@ public class Driver_Mode extends OpMode
     private SampleMecanumDrive drive;
     private RobotIntialization robotIntialization;
     private PIDController hController,vController;
-    public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
-    public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
+    public static double hp,hi,hd,hTarget;
+    public static double vp,vi,vd,vf,vTarget;
     public static boolean farmingMode = true;
     public static double armPosition,wristPosition,intakePower,speedMultiplier;
     boolean intaked,outaked,OVERIDE;
@@ -88,14 +89,13 @@ public class Driver_Mode extends OpMode
 ////////////////////////STATUS UPDATE////////////////
         telemetry.addData("Status", "Initialized");
 /////////////////////////////////////////////////////
-        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;speedMultiplier=1;
+        vp=0.02;vi=0;vd=0.0003;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;speedMultiplier=1;
         armPosition = 0.5;wristPosition = 0;intakePower=0;
         HIGH = 3500;MID=2100;
         intaked = false; outaked=false; farmingMode = false; OVERIDE = false;
     }
     @Override
     public void init_loop(){
-
 
     }
     @Override
@@ -252,7 +252,8 @@ public class Driver_Mode extends OpMode
 
         }
 ////////////////////////DRIVE LOGIC//////////////////
-        speedMultiplier = 1-gamepad2.right_trigger;
+        if(gamepad2.right_trigger>0)speedMultiplier=gamepad2.right_trigger;
+        else speedMultiplier =1;
         drive.setWeightedDrivePower(
                 new Pose2d(
                         -gamepad2.left_stick_y*speedMultiplier,

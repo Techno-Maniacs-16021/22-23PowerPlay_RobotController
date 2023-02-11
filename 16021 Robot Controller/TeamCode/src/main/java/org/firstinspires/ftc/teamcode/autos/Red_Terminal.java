@@ -35,7 +35,7 @@ public class Red_Terminal extends LinearOpMode {
     /////////////////////////////////////////////
     private PIDController hController,vController;
     public static double hp=0.03,hi=0,hd=0.000,hTarget = 0;
-    public static double vp=0.0225,vi=0,vd=0.000,vf=0.01,vTarget = 0;
+    public static double  vp=0.02,vi=0,vd=0.0003,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
     public static double X = 37;
@@ -56,7 +56,7 @@ public class Red_Terminal extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        vp=0.0225;vi=0;vd=0.000;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
+        vp=0.02;vi=0;vd=0.0003;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         ////////////////////////HARDWARE INIT////////////////
         left_arm = hardwareMap.get(ServoImplEx.class, "LA");

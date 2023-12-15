@@ -35,7 +35,7 @@ public class Driver_Mode extends OpMode
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;
     CRServo left_intake, right_intake;
-    DcMotorEx horizontal_slides, vertical_slides;
+    DcMotorEx horizontal_slides, left_vertical_slides,right_vertical_slides;
     AnalogInput rightArmPosition,leftArmPosition;
     RevColorSensorV3 cone_detector;
     /////////////////////////////////////////////
@@ -47,6 +47,7 @@ public class Driver_Mode extends OpMode
     public static double hp,hi,hd,hTarget;
     public static double vp,vi,vd,vf,vTarget;
     public static boolean farmingMode = true;
+    public static boolean active = true;
     public static double armPosition,wristPosition,intakePower,speedMultiplier;
     boolean intaked,outaked,OVERIDE;
     public static int HIGH,MID;
@@ -63,7 +64,8 @@ public class Driver_Mode extends OpMode
         rightArmPosition = hardwareMap.get(AnalogInput.class,"rArmPos");
         leftArmPosition = hardwareMap.get(AnalogInput.class,"lArmPos");
         cone_detector = hardwareMap.get(RevColorSensorV3.class,"coneDetector");
-        vertical_slides = hardwareMap.get(DcMotorEx.class,"V");
+        left_vertical_slides = hardwareMap.get(DcMotorEx.class,"LV");
+        right_vertical_slides = hardwareMap.get(DcMotorEx.class,"RV");
         horizontal_slides = hardwareMap.get(DcMotorEx.class,"H");
 ////////////////////////SET PWM RANGE////////////////
         left_arm.setPwmRange(new PwmControl.PwmRange(500,2500));
@@ -72,12 +74,14 @@ public class Driver_Mode extends OpMode
 ////////////////////////HARDWARE REVERSING///////////
         right_arm.setDirection(ServoImplEx.Direction.REVERSE);
         left_intake.setDirection(CRServo.Direction.REVERSE);
-        vertical_slides.setDirection(DcMotorSimple.Direction.REVERSE);
+        left_vertical_slides.setDirection(DcMotorSimple.Direction.REVERSE);
 ////////////////////////MOTOR BRAKE BEHAVIOR/////////
-        vertical_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        left_vertical_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        right_vertical_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         horizontal_slides.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 ////////////////////////ENCODER RESET////////////////
-        vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        left_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        right_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
         horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
 ////////////////////////PID CONTROLLERS//////////////
         hController = new PIDController(hp,hi,hd);
@@ -89,10 +93,10 @@ public class Driver_Mode extends OpMode
 ////////////////////////STATUS UPDATE////////////////
         telemetry.addData("Status", "Initialized");
 /////////////////////////////////////////////////////
-        vp=0.02;vi=0;vd=0.0003;vf=0.01;vTarget = 0;hp=0.03;hi=0;hd=0.000;hTarget = 0;speedMultiplier=1;
+        vp=0.011;vi=0;vd=0.00005;vf=0.015;vTarget = 0;hp=0.0035;hi=0;hd=0.000;hTarget = 0;speedMultiplier=1;
         armPosition = 0.5;wristPosition = 0;intakePower=0;
-        HIGH = 3500;MID=2100;
-        intaked = false; outaked=false; farmingMode = false; OVERIDE = false;
+        HIGH = 930;MID= 00;
+        intaked = false; outaked=false; farmingMode = false; OVERIDE = false; active=true;
     }
     @Override
     public void init_loop(){
@@ -108,7 +112,6 @@ public class Driver_Mode extends OpMode
     }
     @Override
     public void loop(){
-        if(!gamepad2.b)
 ////////////////////////HORIZONTAL SLIDES PID////////
         hController.setPID(hp,hi,hd);
         int hPos = horizontal_slides.getCurrentPosition();
@@ -117,10 +120,13 @@ public class Driver_Mode extends OpMode
         if(!gamepad2.b)horizontal_slides.setPower(hPower);
 ////////////////////////VERTICAL SLIDES PID//////////
         vController.setPID(vp,vi,vd);
-        int vPos = vertical_slides.getCurrentPosition();
+        int vPos = (right_vertical_slides.getCurrentPosition()+left_vertical_slides.getCurrentPosition())/2;
         double vPID = vController.calculate(vPos,vTarget);
         double vPower = vPID+vf;
-        if(!gamepad2.b)vertical_slides.setPower(vPower);
+        if(!gamepad2.b){
+            left_vertical_slides.setPower(-verticalPID(vTarget, vController, left_vertical_slides.getCurrentPosition()));
+            right_vertical_slides.setPower(verticalPID(vTarget, vController, right_vertical_slides.getCurrentPosition()));
+        }
 ////////////////////////ARM ANG VARS/////////////////
         double leftArmAngle = ((leftArmPosition.getVoltage()-0.82) /3.3) * 360;
         double rightArmAngle = ((2.499-rightArmPosition.getVoltage())/3.3) * 360;
@@ -161,9 +167,9 @@ public class Driver_Mode extends OpMode
                 }
                 if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 10) {
                     armPosition = 0.9;
-                    if (armAngle > 155) intakePower = -1;
+                    if (armAngle > 158) intakePower = -1;
                     if (cone_detector.getDistance(DistanceUnit.INCH) < 2) vTarget = HIGH;
-                    if (vTarget == HIGH && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
+                    if (vTarget == HIGH && getError(vPos, vTarget) < 10) {
                         vTarget = 0;
                         intaked = false;
                         outaked = true;
@@ -181,7 +187,8 @@ public class Driver_Mode extends OpMode
 ////////////////////////MANUAL MODE//////////////////
         else if(gamepad2.b){
             horizontal_slides.setPower(-gamepad1.left_stick_x);
-            vertical_slides.setPower(-gamepad1.right_stick_y);
+            left_vertical_slides.setPower(-gamepad1.right_stick_y);
+            right_vertical_slides.setPower(-gamepad1.right_stick_y);
             if(gamepad1.a)intakePower=1;
             else if(gamepad1.b)intakePower=-1;
             else intakePower=0;
@@ -198,17 +205,20 @@ public class Driver_Mode extends OpMode
         }
 ////////////////////////RESET MODE///////////////////
         else if(gamepad2.left_trigger>0&&gamepad2.right_trigger>0&&gamepad1.left_trigger>0&&gamepad1.right_trigger>0){
-            vertical_slides.setPower(-1);
+            left_vertical_slides.setPower(-1);
+            right_vertical_slides.setPower(-1);
             horizontal_slides.setPower(-1);
             if(gamepad1.a){
-                vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+                left_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+                right_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
                 horizontal_slides.setMode(STOP_AND_RESET_ENCODER);
-                vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+                left_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+                right_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
                 horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
             }
         }
 ////////////////////////CIRCUIT MODE/////////////////
-        else{
+        else if(active){
             if(gamepad1.dpad_up) {
                 OVERIDE = true;
                 intaked = false;
@@ -219,28 +229,36 @@ public class Driver_Mode extends OpMode
                 armPosition = 0.5;
                 intakePower = 0;
             } else if (gamepad1.dpad_left) {
-                armPosition = 0.0;
+                armPosition = 0.2 ;
+                wristPosition = 0;
             }
             if(!OVERIDE) {
-                if (armAngle < 20 && gamepad1.a) {
+                if (armAngle < 40 && gamepad1.a) {
                     hTarget += 50;
                     intakePower = 1;
+                    if(horizontal_slides.getCurrentPosition()>350)armPosition=0.01;
+
                 }
                 if (horizontal_slides.getCurrentPosition() > 25 && !gamepad1.a) {
-                    intakePower = 0;
+                    intakePower = .5;
                     armPosition = .6;
                     wristPosition = 1;
                     hTarget = 0;
+                    horizontal_slides.setPower(-.5);
                     intaked = true;
                 }
-                if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 10) {
-                    armPosition = 0.9;
-                    if (armAngle > 155) intakePower = -1;
+                if (intaked && getError(horizontal_slides.getCurrentPosition(), hTarget) < 25) {
+                    armPosition = 0.8;
+                    if (armAngle > 145) {
+                        sleep(75);
+                        intakePower = -.5;
+                    }
                     if(cone_detector.getDistance(DistanceUnit.INCH)<2||gamepad1.x) {
                         if (gamepad1.y) vTarget = HIGH;
                         else if (gamepad1.b) vTarget = MID;
                     }
-                    if (vTarget > 0 && getError(vertical_slides.getCurrentPosition(), vTarget) < 10) {
+                    if (vTarget > 0 && getError(vPos, vTarget) < 10||(getError(vPos, vTarget) < 50&&gamepad1.y)) {
+                        sleep(75);
                         vTarget = 0;
                         armPosition=0.5;
                         wristPosition=0;
@@ -273,6 +291,7 @@ public class Driver_Mode extends OpMode
         telemetry.addData("vertical position: ",vPos);
         telemetry.addData("vertical target position: ",vTarget);
         telemetry.addData("vertical power: ",vPower);
+        telemetry.addData("arm angle:", armAngle);
         telemetry.addData("loop time: ",loopTime.time());
         loopTime.reset();
         telemetry.update();
@@ -284,5 +303,12 @@ public class Driver_Mode extends OpMode
     public static int getError(int current, double target){
         int error = Math.abs((int)target-current);
         return error;
+    }
+    public static double verticalPID(double target, PIDController pid,int pos){
+        ////////////////////////VERTICAL SLIDES PID//////////
+        pid.setPID(vp,vi,vd);
+        double vPID = pid.calculate(pos,target);
+        double vPower = vPID+vf;
+        return vPower;
     }
 }

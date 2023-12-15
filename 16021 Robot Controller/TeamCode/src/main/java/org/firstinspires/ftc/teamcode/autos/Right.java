@@ -25,7 +25,7 @@ import org.firstinspires.ftc.teamcode.lab.rick.GenericDetector;
 
 @Config
 @Autonomous(preselectTeleOp = "Driver_Mode")
-public class Red_Terminal extends LinearOpMode {
+public class Right extends LinearOpMode {
     /////////////////////////////////////////////
     ServoImplEx left_arm, right_arm, wrist;
     CRServo left_intake, right_intake;
@@ -38,10 +38,13 @@ public class Red_Terminal extends LinearOpMode {
     public static double  vp=0.02,vi=0,vd=0.0003,vf=0.01,vTarget = 0;
     /////////////////////////////////////////////
     public static double REPEAT = 5; //number of extra cones;
-    public static double X = 37;
-    public static double Y = 5;
-    public static double HEAD = 12;
-    public static double HTARGET = 2100;
+    public static double X = -39;
+    public static double Y = 7;
+    public static double HEAD = 168;
+    public static double tangent = 180;
+    public static double tangentPark = 0;
+    //public static double HTARGET = 2100;
+    public static double HTARGET = 2060;
     public static double VTARGET = 3495;
     public static double HBUFFER = 500;
     public static double topConeAngle = .16;
@@ -86,8 +89,8 @@ public class Red_Terminal extends LinearOpMode {
         horizontal_slides.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
 ////////////////////////INIT POSITIONS///////////////
-        left_arm.setPosition(0.5);
-        right_arm.setPosition(0.5);
+        left_arm.setPosition(0.6);
+        right_arm.setPosition(0.6);
         wrist.setPosition(0);
 ////////////////////////PID CONTROLLERS//////////////
         hController = new PIDController(hp,hi,hd);
@@ -101,20 +104,20 @@ public class Red_Terminal extends LinearOpMode {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
 
-        Pose2d startPose = new Pose2d(36, 64, Math.toRadians(90));
+        Pose2d startPose = new Pose2d(-36, 64, Math.toRadians(90));
 
         drive.setPoseEstimate(startPose);
-        Trajectory farm = drive.trajectoryBuilder(startPose)
-                .lineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)))
+        Trajectory farm = drive.trajectoryBuilder(startPose,true)
+                .splineToSplineHeading(new Pose2d(X,Y,Math.toRadians(HEAD)),Math.toRadians(tangent))
                 .build();
         Trajectory park = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(36, 12,Math.toRadians(0)))
-                .build();
-        Trajectory left = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(58, 12,Math.toRadians(0)))
+                .lineToLinearHeading(new Pose2d(-36, 12,Math.toRadians(180)))
                 .build();
         Trajectory right = drive.trajectoryBuilder(farm.end())
-                .lineToLinearHeading(new Pose2d(12, 12, Math.toRadians(90)))
+                .splineToLinearHeading(new Pose2d(-58, 12,Math.toRadians(180)),Math.toRadians(tangentPark))
+                .build();
+        Trajectory left = drive.trajectoryBuilder(farm.end())
+                .lineToLinearHeading(new Pose2d(-12, 12, Math.toRadians(90)))
                 .build();
 
         try {
@@ -202,8 +205,8 @@ public class Red_Terminal extends LinearOpMode {
                 left_arm.setPosition(.9);
                 right_arm.setPosition(.9);
                 sleep(350);
-                left_intake.setPower(-1);
-                right_intake.setPower(-1);
+                left_intake.setPower(-.5);
+                right_intake.setPower(-.5);
                 time.reset();
                 while (opModeIsActive()&&cone_detector.getDistance(DistanceUnit.INCH)>1&&time.time()<.5){/**COOLDOWN FOR CONE**/}
                 left_intake.setPower(0);

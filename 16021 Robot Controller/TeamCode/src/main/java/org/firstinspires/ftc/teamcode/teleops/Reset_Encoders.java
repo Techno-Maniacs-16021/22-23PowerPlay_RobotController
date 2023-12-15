@@ -9,19 +9,24 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 @TeleOp
 public class Reset_Encoders extends OpMode {
-    DcMotorEx horizontal_slides, vertical_slides;
+    DcMotorEx horizontal_slides, left_vertical_slides,right_vertical_slides;
 
     public void init(){
-        vertical_slides = hardwareMap.get(DcMotorEx.class,"V");
+        left_vertical_slides = hardwareMap.get(DcMotorEx.class,"LV");
+        right_vertical_slides = hardwareMap.get(DcMotorEx.class,"RV");
         horizontal_slides = hardwareMap.get(DcMotorEx.class,"H");
-        vertical_slides.setMode(STOP_AND_RESET_ENCODER);
-        vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        left_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+        right_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+        left_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        right_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
         horizontal_slides.setMode(STOP_AND_RESET_ENCODER);
         horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
     }
     public void loop(){
-        vertical_slides.setMode(STOP_AND_RESET_ENCODER);
-        vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        left_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+        right_vertical_slides.setMode(STOP_AND_RESET_ENCODER);
+        left_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
+        right_vertical_slides.setMode(RUN_WITHOUT_ENCODER);
         horizontal_slides.setMode(STOP_AND_RESET_ENCODER);
         horizontal_slides.setMode(RUN_WITHOUT_ENCODER);
     }
